@@ -6,7 +6,6 @@ class PodioIntegration extends PodioObject
 {
     public function __construct($attributes = array())
     {
-        parent::__construct();
         $this->property('integration_id', 'integer', array('id' => true));
         $this->property('app_id', 'integer');
         $this->property('status', 'string');
@@ -26,41 +25,41 @@ class PodioIntegration extends PodioObject
     /**
      * @see https://developers.podio.com/doc/integrations/create-integration-86839
      */
-    public static function create(PodioClient $podio_client, $app_id, $attributes = array())
+    public static function create($app_id, $attributes = array())
     {
-        $body = $podio_client->post("/integration/{$app_id}", $attributes)->json_body();
+        $body = Podio::post("/integration/{$app_id}", $attributes)->json_body();
         return $body['integration_id'];
     }
 
     /**
      * @see https://developers.podio.com/doc/integrations/get-integration-86821
      */
-    public static function get(PodioClient $podio_client, $app_id)
+    public static function get($app_id)
     {
-        return self::member($podio_client->get("/integration/{$app_id}"));
+        return self::member(Podio::get("/integration/{$app_id}"));
     }
 
     /**
      * @see https://developers.podio.com/doc/integrations/refresh-integration-86987
      */
-    public static function refresh(PodioClient $podio_client, $app_id)
+    public static function refresh($app_id)
     {
-        return $podio_client->post("/integration/{$app_id}/refresh");
+        return Podio::post("/integration/{$app_id}/refresh");
     }
 
     /**
      * @see https://developers.podio.com/doc/integrations/update-integration-86843
      */
-    public static function update(PodioClient $podio_client, $app_id, $attributes = array())
+    public static function update($app_id, $attributes = array())
     {
-        return $podio_client->put("/integration/{$app_id}", $attributes);
+        return Podio::put("/integration/{$app_id}", $attributes);
     }
 
     /**
      * @see https://developers.podio.com/doc/integrations/delete-integration-86876
      */
-    public static function delete(PodioClient $podio_client, $app_id)
+    public static function delete($app_id)
     {
-        return $podio_client->delete("/integration/{$app_id}");
+        return Podio::delete("/integration/{$app_id}");
     }
 }

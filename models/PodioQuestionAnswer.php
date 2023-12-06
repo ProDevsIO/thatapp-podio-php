@@ -6,7 +6,6 @@ class PodioQuestionAnswer extends PodioObject
 {
     public function __construct($attributes = array())
     {
-        parent::__construct();
         $this->property('question_option_id', 'integer', array('id' => true));
 
         $this->has_one('user', 'Contact');

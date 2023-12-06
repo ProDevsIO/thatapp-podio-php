@@ -6,7 +6,6 @@ class PodioUser extends PodioObject
 {
     public function __construct($attributes = array())
     {
-        parent::__construct();
         $this->property('user_id', 'integer', array('id' => true));
         $this->property('profile_id', 'integer');
         $this->property('name', 'string');
@@ -29,56 +28,56 @@ class PodioUser extends PodioObject
     /**
      * @see https://developers.podio.com/doc/users/get-user-22378
      */
-    public static function get(PodioClient $podio_client)
+    public static function get()
     {
-        return self::member($podio_client->get("/user"));
+        return self::member(Podio::get("/user"));
     }
 
     /**
      * @see https://developers.podio.com/doc/users/get-user-property-29798
      */
-    public static function get_property(PodioClient $podio_client, $name)
+    public static function get_property($name)
     {
-        return $podio_client->get("/user/property/{$name}")->json_body();
+        return Podio::get("/user/property/{$name}")->json_body();
     }
 
     /**
      * @see https://developers.podio.com/doc/users/set-user-property-29799
      */
-    public static function set_property(PodioClient $podio_client, $name, $value)
+    public static function set_property($name, $value)
     {
-        return $podio_client->put("/user/property/{$name}", $value);
+        return Podio::put("/user/property/{$name}", $value);
     }
 
     /**
      * @see https://developers.podio.com/doc/users/set-user-properties-9052829
      */
-    public static function set_properties(PodioClient $podio_client, $attributes)
+    public static function set_properties($attributes)
     {
-        return $podio_client->put("/user/property/", $attributes);
+        return Podio::put("/user/property/", $attributes);
     }
 
     /**
      * @see https://developers.podio.com/doc/users/delete-user-property-29800
      */
-    public static function delete_property(PodioClient $podio_client, $name)
+    public static function delete_property($name)
     {
-        return $podio_client->delete("/user/property/{$name}");
+        return Podio::delete("/user/property/{$name}");
     }
 
     /**
      * @see https://developers.podio.com/doc/users/update-profile-22402
      */
-    public static function update_profile(PodioClient $podio_client, $attributes)
+    public static function update_profile($attributes)
     {
-        return $podio_client->put("/user/profile/", $attributes);
+        return Podio::put("/user/profile/", $attributes);
     }
 
     /**
      * @see https://developers.podio.com/doc/users/get-profile-field-22380
      */
-    public static function get_profile_field(PodioClient $podio_client, $field)
+    public static function get_profile_field($field)
     {
-        return $podio_client->get("/user/profile/{$field}")->json_body();
+        return Podio::get("/user/profile/{$field}")->json_body();
     }
 }

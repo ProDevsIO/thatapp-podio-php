@@ -6,7 +6,6 @@ class PodioConversationParticipant extends PodioObject
 {
     public function __construct($attributes = array())
     {
-        parent::__construct();
         $this->property('created_on', 'datetime');
 
         $this->has_one('user', 'User');

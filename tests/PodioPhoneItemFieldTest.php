@@ -12,6 +12,7 @@ class PodioPhoneItemFieldTest extends TestCase
      */
     private $object;
 
+
     public function setUp(): void
     {
         parent::setUp();

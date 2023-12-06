@@ -1,22 +1,5 @@
-[7.0.2](#v7.0.2) / [UNRELEASED]
-==================
-* Bugfix: Correct handling of `null` values for date/datetime fields. #244
-
-[7.0.1](#v7.0.1) / [2023-11-07]
-==================
-* Bugfix: Require guzzlehttp/psr7 >= 1.7.0 for Util class by @toby-griffiths in #243.
-
-[7.0.0](#v7.0.0) / [2023-08-22]
-==================
-* BREAKING: Replace static `Podio` client with instantiable `PodioClient` class. #228
-* BREAKING: Replace `save` (and `completed`/`incompleted`/`destroy` on `PodioTask`) methods on instances with static methods #234
-* BREAKING: Remove obsolete `PodioClient::secret` and `PodioClient::headers` properties.
-* BREAKING: `Podio::debug` changed from public to protected: use `PodioClient::set_debug(..)`
-* BREAKING: Kint is now an optional dependency of the package. Use `composer require kint-php/kint` to install it, if you need it.
-* Bugfix: Error on fetching single contact with `PodioContact::get`.
-* Bugfix: Setting values to empty array of several `PodioItemField` subtypes was broken.
-* Bugfix: Debug output via Kint is now working again. #240
-* See [migration guide](https://github.com/podio-community/podio-php/blob/master/MIGRATION_GUIDE_v7.md) for details.
+[7.0.0](#v7.0.0) [unreleased]
+* BREAKING CHANGE: isolated client class to allow for parallel usage, extension and mocking
 
 [6.1.1](#v6.1.1) / 2023-06-12
 ==================
@@ -36,7 +19,7 @@
 
 [6.0.1](#v6.0.1) / 2021-09-24
 ==================
-* Bugfix: Turn off Guzzle HTTP errors, $podio_client->request handles 4xx and 5xx errors ([#211](https://github.com/podio-community/podio-php/issues/211))
+* Bugfix: Turn off Guzzle HTTP errors, Podio::request handles 4xx and 5xx errors ([#211](https://github.com/podio-community/podio-php/issues/211))
 
 [6.0.0](#v6.0.0) / 2021-08-23
 ==================
@@ -48,7 +31,7 @@
 
 5.1.0 / 2020-07-15
 ==================
-* Bugfix: Assure $podio_client->set_debug(true) performs debug output (with Kint) in non-cli setting.
+* Bugfix: Assure Podio::set_debug(true) performs debug output (with Kint) in non-cli setting.
 * Doc: More thorough quick start guide in README.md (#190)
 * Bugfix: Force HTTP 1.1 to prevent broken requests/file uploads (#191)
 

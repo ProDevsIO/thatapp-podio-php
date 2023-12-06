@@ -4,7 +4,6 @@ class PodioVia extends PodioObject
 {
     public function __construct($attributes = array())
     {
-        parent::__construct();
         $this->property('id', 'integer');
         $this->property('auth_client_id', 'integer');
         $this->property('name', 'string');

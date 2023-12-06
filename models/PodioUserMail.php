@@ -6,7 +6,6 @@ class PodioUserMail extends PodioObject
 {
     public function __construct($attributes = array())
     {
-        parent::__construct();
         $this->property('mail', 'string');
         $this->property('verified', 'boolean');
         $this->property('primary', 'boolean');

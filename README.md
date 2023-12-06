@@ -16,11 +16,11 @@ Use in your PHP files:
 ```php
 require __DIR__ . '/vendor/autoload.php';
 
-$client = new PodioClient($client_id, $client_secret);
-$client->authenticate_with_app($app_id, $app_token);
-$items = PodioItem::filter($client, $app_id);
+Podio::setup($client_id, $client_secret);
+Podio::authenticate_with_app($app_id, $app_token);
+$items = PodioItem::filter($app_id);
 
-print "My app has " . $items->total . " items";
+print "My app has " . count($items) . " items";
 ```
 
 ## Contribute

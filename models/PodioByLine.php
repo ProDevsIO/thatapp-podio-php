@@ -4,7 +4,6 @@ class PodioByLine extends PodioObject
 {
     public function __construct($attributes = array())
     {
-        parent::__construct();
         $this->property('type', 'string');
         $this->property('id', 'integer');
         $this->property('avatar_type', 'string');

@@ -13,6 +13,7 @@ class PodioAppFieldCollectionTest extends TestCase
      * @var \PodioAppFieldCollection
      */
     private $collection;
+
     public function setUp(): void
     {
         parent::setUp();

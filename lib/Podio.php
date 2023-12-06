@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\Podio\ApiLogService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
@@ -9,45 +10,41 @@ use GuzzleHttp\Psr7\Uri;
 use GuzzleHttp\RequestOptions;
 use GuzzleHttp\TransferStats;
 
-class PodioClient
+class Podio
 {
-    public $oauth;
-    /** @var bool|string */
-    protected $debug = false;
-    /**
-     * Only created/used if debug is enabled and set to 'file'.
-     *
-     * @var ?PodioLogger
-     */
-    public $logger;
-    public $session_manager;
-    /** @var ?PodioResponse */
-    public $last_response;
-    public $auth_type;
+    public static $oauth;
+    public static $debug;
+    public static $logger;
+    public static $session_manager;
+    public static $last_response;
+    public static $auth_type;
     /** @var \GuzzleHttp\Client */
-    public $http_client;
-    protected $url;
-    protected $client_id;
-    protected $client_secret;
+    public static $http_client;
+    protected static $url;
+    protected static $client_id;
+    protected static $client_secret;
+    protected static $secret;
+    protected static $headers;
     /** @var \Psr\Http\Message\ResponseInterface */
-    private $last_http_response;
+    private static $last_http_response;
 
-    public const VERSION = '7.0.0';
+    public const VERSION = '6.0.0';
 
     public const GET = 'GET';
     public const POST = 'POST';
     public const PUT = 'PUT';
     public const DELETE = 'DELETE';
 
-    public function __construct($client_id, $client_secret, $options = array('session_manager' => null, 'curl_options' => []))
+    public static function setup($client_id, $client_secret, $options = array('session_manager' => null, 'curl_options' => array()))
     {
         // Setup client info
-        $this->client_id = $client_id;
-        $this->client_secret = $client_secret;
+        self::$client_id = $client_id;
+        self::$client_secret = $client_secret;
 
-        $this->url = empty($options['api_url']) ? 'https://api.podio.com:443' : $options['api_url'];
+        self::$url = empty($options['api_url']) ? 'https://api.podio.com:443' : $options['api_url'];
+        self::$debug = self::$debug ? self::$debug : false;
         $client_config = [
-            'base_uri' => $this->url,
+            'base_uri' => self::$url,
 
             RequestOptions::HEADERS => [
                 'Accept' => 'application/json',
@@ -61,50 +58,48 @@ class PodioClient
             /** @noinspection PhpFullyQualifiedNameUsageInspection */
             $client_config[RequestOptions::VERIFY] = \Composer\CaBundle\CaBundle::getSystemCaRootBundlePath();
         }
-        $this->http_client = new Client($client_config);
+        self::$http_client = new Client($client_config);
 
-        $this->session_manager = null;
+        self::$session_manager = null;
         if ($options && !empty($options['session_manager'])) {
             if (is_string($options['session_manager']) && class_exists($options['session_manager'])) {
-                $this->session_manager = new $options['session_manager']();
+                self::$session_manager = new $options['session_manager']();
             } elseif (is_object($options['session_manager']) && method_exists($options['session_manager'], 'get') && method_exists($options['session_manager'], 'set')) {
-                $this->session_manager = $options['session_manager'];
+                self::$session_manager = $options['session_manager'];
             }
-            if ($this->session_manager) {
-                $this->oauth = $this->session_manager->get();
+            if (self::$session_manager) {
+                self::$oauth = self::$session_manager->get();
             }
         }
+
+        // Register shutdown function for debugging and session management
+        register_shutdown_function('Podio::shutdown');
     }
 
-    public function __destruct()
+    public static function authenticate_with_app($app_id, $app_token)
     {
-        $this->shutdown();
+        return static::authenticate('app', array('app_id' => $app_id, 'app_token' => $app_token));
     }
 
-    public function authenticate_with_app($app_id, $app_token): bool
+    public static function authenticate_with_password($username, $password)
     {
-        return $this->authenticate('app', ['app_id' => $app_id, 'app_token' => $app_token]);
+        return static::authenticate('password', array('username' => $username, 'password' => $password));
     }
 
-    public function authenticate_with_password($username, $password): bool
+    public static function authenticate_with_authorization_code($authorization_code, $redirect_uri)
     {
-        return $this->authenticate('password', ['username' => $username, 'password' => $password]);
+        return static::authenticate('authorization_code', array('code' => $authorization_code, 'redirect_uri' => $redirect_uri));
     }
 
-    public function authenticate_with_authorization_code($authorization_code, $redirect_uri): bool
+    public static function refresh_access_token()
     {
-        return $this->authenticate('authorization_code', ['code' => $authorization_code, 'redirect_uri' => $redirect_uri]);
+        return static::authenticate('refresh_token', array('refresh_token' => self::$oauth->refresh_token));
     }
 
-    public function refresh_access_token(): bool
+    public static function authenticate($grant_type, $attributes)
     {
-        return $this->authenticate('refresh_token', ['refresh_token' => $this->oauth->refresh_token]);
-    }
-
-    public function authenticate($grant_type, $attributes): bool
-    {
-        $data = [];
-        $auth_type = ['type' => $grant_type];
+        $data = array();
+        $auth_type = array('type' => $grant_type);
 
         switch ($grant_type) {
             case 'password':
@@ -134,18 +129,18 @@ class PodioClient
                 break;
         }
 
-        $request_data = array_merge($data, ['client_id' => $this->client_id, 'client_secret' => $this->client_secret]);
-        if ($response = $this->request(self::POST, '/oauth/token', $request_data, ['oauth_request' => true])) {
+        $request_data = array_merge($data, array('client_id' => self::$client_id, 'client_secret' => self::$client_secret));
+        if ($response = static::request(self::POST, '/oauth/token', $request_data, array('oauth_request' => true))) {
             $body = $response->json_body();
-            $this->oauth = new PodioOAuth($body['access_token'], $body['refresh_token'], $body['expires_in'], $body['ref'], $body['scope']);
+            self::$oauth = new PodioOAuth($body['access_token'], $body['refresh_token'], $body['expires_in'], $body['ref'], $body['scope']);
 
             // Don't touch auth_type if we are refreshing automatically as it'll be reset to null
             if ($grant_type !== 'refresh_token') {
-                $this->auth_type = $auth_type;
+                self::$auth_type = $auth_type;
             }
 
-            if ($this->session_manager) {
-                $this->session_manager->set($this->oauth, $this->auth_type);
+            if (self::$session_manager) {
+                self::$session_manager->set(self::$oauth, self::$auth_type);
             }
 
             return true;
@@ -153,25 +148,25 @@ class PodioClient
         return false;
     }
 
-    public function clear_authentication()
+    public static function clear_authentication()
     {
-        $this->oauth = new PodioOAuth();
+        self::$oauth = new PodioOAuth();
 
-        if ($this->session_manager) {
-            $this->session_manager->set($this->oauth, $this->auth_type);
+        if (self::$session_manager) {
+            self::$session_manager->set(self::$oauth, self::$auth_type);
         }
     }
 
-    public function authorize_url($redirect_uri, $scope): string
+    public static function authorize_url($redirect_uri, $scope)
     {
-        $parsed_url = parse_url($this->url);
+        $parsed_url = parse_url(self::$url);
         $host = str_replace('api.', '', $parsed_url['host']);
-        return 'https://' . $host . '/oauth/authorize?response_type=code&client_id=' . $this->client_id . '&redirect_uri=' . rawurlencode($redirect_uri) . '&scope=' . rawurlencode($scope);
+        return 'https://' . $host . '/oauth/authorize?response_type=code&client_id=' . self::$client_id . '&redirect_uri=' . rawurlencode($redirect_uri) . '&scope=' . rawurlencode($scope);
     }
 
-    public function is_authenticated(): bool
+    public static function is_authenticated()
     {
-        return $this->oauth && $this->oauth->access_token;
+        return self::$oauth && self::$oauth->access_token;
     }
 
     /**
@@ -190,8 +185,12 @@ class PodioClient
      * @throws PodioServerError
      * @throws Exception when client is not setup
      */
-    public function request($method, $url, $attributes = [], $options = [])
+    public static function request($method, $url, $attributes = array(), $options = array())
     {
+        if (!self::$http_client) {
+            throw new Exception('Client has not been setup with client id and client secret.');
+        }
+
         $original_url = $url;
         $encoded_attributes = null;
 
@@ -212,7 +211,7 @@ class PodioClient
 
                 $separator = strpos($url, '?') ? '&' : '?';
                 if ($attributes) {
-                    $query = $this->encode_attributes($attributes);
+                    $query = static::encode_attributes($attributes);
                     $request = $request->withUri(new Uri($url . $separator . $query));
                 }
                 break;
@@ -235,7 +234,7 @@ class PodioClient
                     $request = $request->withHeader('Content-type', 'application/json');
                 } else {
                     // x-www-form-urlencoded
-                    $encoded_attributes = $this->encode_attributes($attributes);
+                    $encoded_attributes = static::encode_attributes($attributes);
                     $request = $request->withBody(GuzzleHttp\Psr7\Utils::streamFor($encoded_attributes));
                     $request = $request->withHeader('Content-type', 'application/x-www-form-urlencoded');
                 }
@@ -248,8 +247,8 @@ class PodioClient
         }
 
         // Add access token to request
-        if (isset($this->oauth) && !empty($this->oauth->access_token) && !(isset($options['oauth_request']) && $options['oauth_request'] == true)) {
-            $token = $this->oauth->access_token;
+        if (isset(self::$oauth) && !empty(self::$oauth->access_token) && !(isset($options['oauth_request']) && $options['oauth_request'] == true)) {
+            $token = self::$oauth->access_token;
             $request = $request->withHeader('Authorization', "OAuth2 {$token}");
         }
 
@@ -263,7 +262,7 @@ class PodioClient
         try {
             $transferTime = 0;
             /** \Psr\Http\Message\ResponseInterface */
-            $http_response = $this->http_client->send($request, [
+            $http_response = self::$http_client->send($request, [
                 RequestOptions::HTTP_ERRORS => false,
                 RequestOptions::ON_STATS => function (TransferStats $stats) use (&$transferTime) {
                     $transferTime = $stats->getTransferTime();
@@ -273,11 +272,11 @@ class PodioClient
             $response->headers = array_map(function ($values) {
                 return implode(', ', $values);
             }, $http_response->getHeaders());
-            $this->last_http_response = $http_response;
+            self::$last_http_response = $http_response;
             if (!isset($options['return_raw_as_resource_only']) || $options['return_raw_as_resource_only'] != true) {
                 $response->body = $http_response->getBody()->getContents();
             }
-            $this->last_response = $response;
+            self::$last_response = $response;
         } catch (RequestException $requestException) {
             throw new PodioConnectionError('Connection to Podio API failed: [' . get_class($requestException) . '] ' . $requestException->getMessage(), $requestException->getCode());
         } catch (GuzzleException $e) { // this generally should not happen as RequestOptions::HTTP_ERRORS is set to `false`
@@ -285,7 +284,7 @@ class PodioClient
         }
 
         if (!isset($options['oauth_request'])) {
-            $this->log_request($method, $url, $encoded_attributes, $response, $transferTime);
+            static::log_request($method, $url, $encoded_attributes, $response, $transferTime);
         }
 
         switch ($response->status) {
@@ -301,32 +300,32 @@ class PodioClient
                 $body = $response->json_body();
                 if (strstr($body['error'], 'invalid_grant')) {
                     // Reset access token & refresh_token
-                    $this->clear_authentication();
+                    static::clear_authentication();
                     throw new PodioInvalidGrantError($response->body, $response->status, $url);
                 } else {
                     throw new PodioBadRequestError($response->body, $response->status, $url);
                 }
-            // no break
+                // no break
             case 401:
                 $body = $response->json_body();
                 if (strstr($body['error_description'], 'expired_token') || strstr($body['error'], 'invalid_token')) {
-                    if ($this->oauth->refresh_token) {
+                    if (self::$oauth->refresh_token) {
                         // Access token is expired. Try to refresh it.
-                        if ($this->refresh_access_token()) {
+                        if (static::refresh_access_token()) {
                             // Try the original request again.
-                            return $this->request($method, $original_url, $attributes);
+                            return static::request($method, $original_url, $attributes);
                         } else {
-                            $this->clear_authentication();
+                            static::clear_authentication();
                             throw new PodioAuthorizationError($response->body, $response->status, $url);
                         }
                     } else {
                         // We have tried in vain to get a new access token. Log the user out.
-                        $this->clear_authentication();
+                        static::clear_authentication();
                         throw new PodioAuthorizationError($response->body, $response->status, $url);
                     }
                 } elseif (strstr($body['error'], 'invalid_request') || strstr($body['error'], 'unauthorized')) {
                     // Access token is invalid.
-                    $this->clear_authentication();
+                    static::clear_authentication();
                     throw new PodioAuthorizationError($response->body, $response->status, $url);
                 }
                 break;
@@ -352,34 +351,34 @@ class PodioClient
         return false;
     }
 
-    public function get($url, $attributes = [], $options = [])
+    public static function get($url, $attributes = array(), $options = array())
     {
-        return $this->request(PodioClient::GET, $url, $attributes, $options);
+        return ApiLogService::request(Podio::GET, $url, $attributes, $options);
     }
-    public function post($url, $attributes = [], $options = [])
+    public static function post($url, $attributes = array(), $options = array())
     {
-        return $this->request(PodioClient::POST, $url, $attributes, $options);
+        return ApiLogService::request(Podio::POST, $url, $attributes, $options);
     }
-    public function put($url, $attributes = [])
+    public static function put($url, $attributes = array())
     {
-        return $this->request(PodioClient::PUT, $url, $attributes);
+        return ApiLogService::request(Podio::PUT, $url, $attributes);
     }
-    public function delete($url, $attributes = [])
+    public static function delete($url, $attributes = array())
     {
-        return $this->request(PodioClient::DELETE, $url, $attributes);
+        return ApiLogService::request(Podio::DELETE, $url, $attributes);
     }
 
-    public function encode_attributes($attributes): string
+    public static function encode_attributes($attributes)
     {
-        $return = [];
+        $return = array();
         foreach ($attributes as $key => $value) {
             $return[] = urlencode($key) . '=' . urlencode($value);
         }
         return join('&', $return);
     }
-    public function url_with_options($url, $options): string
+    public static function url_with_options($url, $options)
     {
-        $parameters = [];
+        $parameters = array();
 
         if (isset($options['silent']) && $options['silent']) {
             $parameters[] = 'silent=1';
@@ -396,18 +395,18 @@ class PodioClient
         return $parameters ? $url . '?' . join('&', $parameters) : $url;
     }
 
-    public function rate_limit_remaining(): string
+    public static function rate_limit_remaining()
     {
-        if (isset($this->last_http_response)) {
-            return implode($this->last_http_response->getHeader('x-rate-limit-remaining'));
+        if (isset(self::$last_http_response)) {
+            return implode(self::$last_http_response->getHeader('x-rate-limit-remaining'));
         }
         return '-1';
     }
 
-    public function rate_limit(): string
+    public static function rate_limit()
     {
-        if (isset($this->last_http_response)) {
-            return implode($this->last_http_response->getHeader('x-rate-limit-limit'));
+        if (isset(self::$last_http_response)) {
+            return implode(self::$last_http_response->getHeader('x-rate-limit-limit'));
         }
         return '-1';
     }
@@ -418,63 +417,66 @@ class PodioClient
      * @param $toggle boolean True to enable debugging. False to disable
      * @param $output string Output mode. Can be "stdout" or "file". Default is "stdout"
      */
-    public function set_debug(bool $toggle, string $output = "stdout")
+    public static function set_debug($toggle, $output = "stdout")
     {
         if ($toggle) {
-            $this->debug = $output;
+            self::$debug = $output;
         } else {
-            $this->debug = false;
+            self::$debug = false;
         }
     }
 
-    protected function log_request($method, $url, $encoded_attributes, $response, $transferTime): void
+    public static function log_request($method, $url, $encoded_attributes, $response, $transferTime)
     {
-        if ($this->debug) {
-            if (!$this->logger) {
-                $this->logger = new PodioLogger();
-            }
+        if (self::$debug) {
             $timestamp = gmdate('Y-m-d H:i:s');
             $text = "{$timestamp} {$response->status} {$method} {$url}\n";
             if (!empty($encoded_attributes)) {
                 $text .= "{$timestamp} Request body: " . $encoded_attributes . "\n";
             }
-            $text .= "{$timestamp} Response: {$response->body}\n\n";
+            $text .= "{$timestamp} Reponse: {$response->body}\n\n";
 
-            if ($this->debug === 'file') {
-                $this->logger->log($text);
-            } elseif ($this->debug === 'stdout' && php_sapi_name() !== 'cli' && class_exists('\\Kint\\Kint')) {
-                /** @noinspection PhpFullyQualifiedNameUsageInspection */
-                \Kint\Kint::dump("{$method} {$url}", $encoded_attributes, $response);
-            } else {
+            if (self::$debug === 'file') {
+                if (!self::$logger) {
+                    self::$logger = new PodioLogger();
+                }
+                self::$logger->log($text);
+            } elseif (self::$debug === 'stdout' && php_sapi_name() === 'cli') {
                 print $text;
+            } elseif (self::$debug === 'stdout' && php_sapi_name() === 'cli') {
+                require_once 'vendor/kint/Kint.class.php';
+                Kint::dump("{$method} {$url}", $encoded_attributes, $response);
             }
 
-            $this->logger->call_log[] = $transferTime;
+            self::$logger->call_log[] = $transferTime;
         }
     }
 
-    public function shutdown()
+    public static function shutdown()
     {
         // Write any new access and refresh tokens to session.
-        if ($this->session_manager) {
-            $this->session_manager->set($this->oauth, $this->auth_type);
+        if (self::$session_manager) {
+            self::$session_manager->set(self::$oauth, self::$auth_type);
         }
 
         // Log api call times if debugging
-        if ($this->debug && $this->logger) {
+        if (self::$debug && self::$logger) {
             $timestamp = gmdate('Y-m-d H:i:s');
-            $count = sizeof($this->logger->call_log);
+            $count = sizeof(self::$logger->call_log);
             $duration = 0;
-            if ($this->logger->call_log) {
-                foreach ($this->logger->call_log as $val) {
+            if (self::$logger->call_log) {
+                foreach (self::$logger->call_log as $val) {
                     $duration += $val;
                 }
             }
 
             $text = "\n{$timestamp} Performed {$count} request(s) in {$duration} seconds\n";
-            if ($this->debug === 'file') {
-                $this->logger->log($text);
-            } elseif ($this->debug === 'stdout' && php_sapi_name() === 'cli') {
+            if (self::$debug === 'file') {
+                if (!self::$logger) {
+                    self::$logger = new PodioLogger();
+                }
+                self::$logger->log($text);
+            } elseif (self::$debug === 'stdout' && php_sapi_name() === 'cli') {
                 print $text;
             }
         }

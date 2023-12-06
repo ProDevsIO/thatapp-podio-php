@@ -15,6 +15,8 @@ class PodioObjectTest extends TestCase
      */
     private $object;
 
+
+
     public function setUp(): void
     {
         parent::setUp();
@@ -313,16 +315,5 @@ class PodioObjectTest extends TestCase
         $relationship = $this->object->relationship();
         $this->assertSame($instance, $relationship['instance']);
         $this->assertSame('fields', $relationship['property']);
-    }
-
-    public function test_null_with_datetime(): void
-    {
-        $object = new PodioObject();
-        $object->property('datetime_property', 'datetime');
-        $object->datetime_property = null;
-
-        $this->assertNull($object->datetime_property);
-        // expect no (php deprecation) warning:
-        $this->expectOutputRegex('/^\s*$/');
     }
 }

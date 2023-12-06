@@ -6,7 +6,6 @@ class PodioEmbed extends PodioObject
 {
     public function __construct($attributes = array())
     {
-        parent::__construct();
         $this->property('embed_id', 'integer', array('id' => true));
         $this->property('original_url', 'string');
         $this->property('resolved_url', 'string');
@@ -27,8 +26,8 @@ class PodioEmbed extends PodioObject
     /**
      * @see https://developers.podio.com/doc/embeds/add-an-embed-726483
      */
-    public static function create(PodioClient $podio_client, $attributes = array())
+    public static function create($attributes = array())
     {
-        return self::member($podio_client->post("/embed/", $attributes));
+        return self::member(Podio::post("/embed/", $attributes));
     }
 }

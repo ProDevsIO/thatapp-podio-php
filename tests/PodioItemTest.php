@@ -12,13 +12,6 @@ use PodioTextItemField;
 
 class PodioItemTest extends TestCase
 {
-    private $mockClient;
-
-    public function setUp(): void
-    {
-        parent::setUp();
-        $this->mockClient = $this->createMock(\PodioClient::class);
-    }
     public function test_create_item(): void
     {
         $item = new PodioItem([
@@ -40,6 +33,6 @@ class PodioItemTest extends TestCase
                 new PodioTextItemField(["external_id" => "title", "values" => "TEST"]),
             ])
         ]);
-        PodioItem::save($this->mockClient, $item);
+        $item->save();
     }
 }

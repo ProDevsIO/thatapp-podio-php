@@ -6,7 +6,6 @@ class PodioAction extends PodioObject
 {
     public function __construct($attributes = array())
     {
-        parent::__construct();
         $this->property('action_id', 'integer', array('id' => true));
         $this->property('type', 'string');
         $this->property('data', 'hash');
@@ -20,8 +19,8 @@ class PodioAction extends PodioObject
     /**
      * @see https://developers.podio.com/doc/actions/get-action-1701120
      */
-    public static function get(PodioClient $podio_client, $action_id)
+    public static function get($action_id)
     {
-        return self::member($podio_client->get("/action/{$action_id}"));
+        return self::member(Podio::get("/action/{$action_id}"));
     }
 }

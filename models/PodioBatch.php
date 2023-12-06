@@ -6,7 +6,6 @@ class PodioBatch extends PodioObject
 {
     public function __construct($attributes = array())
     {
-        parent::__construct();
         $this->property('batch_id', 'integer', array('id' => true));
         $this->property('name', 'string');
         $this->property('plugin', 'string');
@@ -28,24 +27,24 @@ class PodioBatch extends PodioObject
     /**
      * @see https://developers.podio.com/doc/batch/get-batch-6144225
      */
-    public static function get(PodioClient $podio_client, $batch_id)
+    public static function get($batch_id)
     {
-        return self::member($podio_client->get("/batch/{$batch_id}"));
+        return self::member(Podio::get("/batch/{$batch_id}"));
     }
 
     /**
      * @see https://developers.podio.com/doc/batch/get-running-batches-15856178
      */
-    public static function get_for(PodioClient $podio_client, $ref_type, $ref_id, $plugin)
+    public static function get_for($ref_type, $ref_id, $plugin)
     {
-        return self::listing($podio_client->get("/batch/{$ref_type}/{$ref_id}/{$plugin}/running/"));
+        return self::listing(Podio::get("/batch/{$ref_type}/{$ref_id}/{$plugin}/running/"));
     }
 
     /**
      * @see https://developers.podio.com/doc/batch/get-batches-6078877
      */
-    public static function get_all(PodioClient $podio_client, $attributes = array())
+    public static function get_all($attributes = array())
     {
-        return self::listing($podio_client->get("/batch/", $attributes));
+        return self::listing(Podio::get("/batch/", $attributes));
     }
 }

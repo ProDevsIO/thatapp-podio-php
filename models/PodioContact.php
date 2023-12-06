@@ -6,7 +6,6 @@ class PodioContact extends PodioObject
 {
     public function __construct($attributes = array())
     {
-        parent::__construct();
         $this->property('profile_id', 'integer');
         $this->property('user_id', 'integer');
         $this->property('name', 'string');
@@ -57,138 +56,133 @@ class PodioContact extends PodioObject
     /**
      * @see https://developers.podio.com/doc/contacts/create-space-contact-65590
      */
-    public static function create(PodioClient $podio_client, $space_id, $attributes = array())
+    public static function create($space_id, $attributes = array())
     {
-        $body = $podio_client->post("/contact/space/{$space_id}/", $attributes)->json_body();
+        $body = Podio::post("/contact/space/{$space_id}/", $attributes)->json_body();
         return $body['profile_id'];
     }
 
     /**
      * @see https://developers.podio.com/doc/contacts/delete-contact-s-60560
      */
-    public static function delete(PodioClient $podio_client, $profile_ids)
+    public static function delete($profile_ids)
     {
-        return $podio_client->delete("/contact/{$profile_ids}");
+        return Podio::delete("/contact/{$profile_ids}");
     }
 
     /**
      * @see https://developers.podio.com/doc/contacts/get-user-contact-field-22403
      */
-    public static function get_field_for_user(PodioClient $podio_client, $user_id, $key)
+    public static function get_field_for_user($user_id, $key)
     {
-        return $podio_client->get("/contact/user/{$user_id}/{$key}")->json_body();
+        return Podio::get("/contact/user/{$user_id}/{$key}")->json_body();
     }
 
     /**
      * @see https://developers.podio.com/doc/contacts/get-contact-totals-60467
      */
-    public static function get_totals(PodioClient $podio_client)
+    public static function get_totals()
     {
-        return $podio_client->get("/contact/totals/")->json_body();
+        return Podio::get("/contact/totals/")->json_body();
     }
 
     /**
      * @see https://developers.podio.com/doc/contacts/get-contact-totals-v3-34629208
      */
-    public static function get_totals_v3(PodioClient $podio_client)
+    public static function get_totals_v3()
     {
-        return $podio_client->get("/contact/totals/v3/")->json_body();
+        return Podio::get("/contact/totals/v3/")->json_body();
     }
 
     /**
      * @see https://developers.podio.com/doc/contacts/get-space-contact-totals-67508
      */
-    public static function get_totals_for_space(PodioClient $podio_client, $space_id)
+    public static function get_totals_for_space($space_id)
     {
-        return $podio_client->get("/contact/space/{$space_id}/totals/")->json_body();
+        return Podio::get("/contact/space/{$space_id}/totals/")->json_body();
     }
 
     /**
-     * @param int|array|string $profile_ids either a single profile id or an array of profile ids.
-     * A string with comma separated profile ids is also accepted for backwards compatibility.
-     * @return PodioContact|array a single contact or an array of contacts depending on the parameter `$profile_ids`.
      * @see https://developers.podio.com/doc/contacts/get-contact-s-22335
      */
-    public static function get(PodioClient $podio_client, $profile_ids, $attributes = array())
+    public static function get($profile_ids, $attributes = array())
     {
-        $urlParam = is_array($profile_ids) ? implode(',', $profile_ids) : $profile_ids;
-        $result = $podio_client->get("/contact/$urlParam/v2", $attributes);
-        $response_body = $result->json_body();
-        if (empty($response_body['profile_id'])) {
-            return self::listing($response_body);
+        $result = Podio::get("/contact/{$profile_ids}/v2", $attributes);
+        if (is_array($result->json_body())) {
+            return self::listing($result);
         }
-        return self::member($response_body);
+        return self::member($result);
     }
 
     /**
      * @see https://developers.podio.com/doc/contacts/get-vcard-213496
      */
-    public static function vcard(PodioClient $podio_client, $profile_id)
+    public static function vcard($profile_id)
     {
-        return $podio_client->get("/contact/{$profile_id}/vcard")->body;
+        return Podio::get("/contact/{$profile_id}/vcard")->body;
     }
 
     /**
      * @see https://developers.podio.com/doc/contacts/get-user-contact-60514
      */
-    public static function get_for_user(PodioClient $podio_client, $user_id)
+    public static function get_for_user($user_id)
     {
-        return self::member($podio_client->get("/contact/user/{$user_id}"));
+        return self::member(Podio::get("/contact/user/{$user_id}"));
     }
 
     /**
      * @see https://developers.podio.com/doc/contacts/get-contacts-22400
      */
-    public static function get_all(PodioClient $podio_client, $attributes = array())
+    public static function get_all($attributes = array())
     {
-        return self::listing($podio_client->get("/contact/", $attributes));
+        return self::listing(Podio::get("/contact/", $attributes));
     }
 
     /**
      * @see https://developers.podio.com/doc/contacts/get-organization-contacts-22401
      */
-    public static function get_for_org(PodioClient $podio_client, $org_id, $attributes = array())
+    public static function get_for_org($org_id, $attributes = array())
     {
-        return self::listing($podio_client->get("/contact/org/{$org_id}", $attributes));
+        return self::listing(Podio::get("/contact/org/{$org_id}", $attributes));
     }
 
     /**
      * @see https://developers.podio.com/doc/contacts/get-space-contacts-22414
      */
-    public static function get_for_space(PodioClient $podio_client, $space_id, $attributes = array())
+    public static function get_for_space($space_id, $attributes = array())
     {
-        return self::listing($podio_client->get("/contact/space/{$space_id}/", $attributes));
+        return self::listing(Podio::get("/contact/space/{$space_id}/", $attributes));
     }
 
     /**
      * @see https://developers.podio.com/doc/contacts/get-space-contacts-on-app-79475279
      */
-    public static function get_for_app(PodioClient $podio_client, $app_id, $attributes = array())
+    public static function get_for_app($app_id, $attributes = array())
     {
-        return self::listing($podio_client->get("/contact/app/{$app_id}/", $attributes));
+        return self::listing(Podio::get("/contact/app/{$app_id}/", $attributes));
     }
 
     /**
      * @see https://developers.podio.com/doc/contacts/get-skills-1346872
      */
-    public static function get_skills(PodioClient $podio_client, $attributes = array())
+    public static function get_skills($attributes = array())
     {
-        return $podio_client->get("/contact/skill/", $attributes)->json_body();
+        return Podio::get("/contact/skill/", $attributes)->json_body();
     }
 
     /**
      * @see https://developers.podio.com/doc/contacts/update-contact-60556
      */
-    public static function update(PodioClient $podio_client, $profile_id, $attributes = array())
+    public static function update($profile_id, $attributes = array())
     {
-        return $podio_client->put("/contact/{$profile_id}", $attributes);
+        return Podio::put("/contact/{$profile_id}", $attributes);
     }
 
     /**
      * @see https://developers.podio.com/doc/contacts/update-contact-field-60558
      */
-    public static function update_field(PodioClient $podio_client, $profile_id, $key, $attributes = array())
+    public static function update_field($profile_id, $key, $attributes = array())
     {
-        return $podio_client->put("/contact/{$profile_id}/{$key}", $attributes);
+        return Podio::put("/contact/{$profile_id}/{$key}", $attributes);
     }
 }

@@ -2,20 +2,13 @@
 
 class PodioError extends Exception
 {
-    /** @var array|null */
     public $body;
     public $status;
     public $url;
     public $request;
-
-    /**
-     * @param string|null $body
-     * @param int|null $status
-     * @param string|null $url
-     */
     public function __construct($body, $status, $url)
     {
-        $this->body = $body !== null ? json_decode($body, true) : null;
+        $this->body = json_decode($body, true);
         $this->status = $status;
         $this->url = $url;
         $this->request = $this->body['request'] ?? null;
@@ -24,7 +17,7 @@ class PodioError extends Exception
 
     public function __toString()
     {
-        $str = get_class($this);
+        $str = $str = get_class($this);
         if (!empty($this->body['error_description'])) {
             $str .= ': "'.$this->body['error_description'].'"';
         }

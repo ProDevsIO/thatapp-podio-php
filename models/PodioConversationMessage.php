@@ -6,7 +6,6 @@ class PodioConversationMessage extends PodioObject
 {
     public function __construct($attributes = array())
     {
-        parent::__construct();
         $this->property('message_id', 'integer', array('id' => true));
         $this->property('embed_id', 'integer');
         $this->property('embed_file_id', 'integer');

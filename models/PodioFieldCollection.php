@@ -7,6 +7,8 @@
  */
 class PodioFieldCollection extends PodioCollection
 {
+    private $__belongs_to;
+
     /**
      * Constructor. Pass in an array of fields.
      */
@@ -87,7 +89,7 @@ class PodioFieldCollection extends PodioCollection
     /**
      * Returns all readonly fields
      */
-    public function readonly_fields(): PodioFieldCollection
+    public function readonly_fields()
     {
         $fields = new PodioFieldCollection(array());
         foreach ($this->_get_items() as $field) {

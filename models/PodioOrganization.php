@@ -6,7 +6,6 @@ class PodioOrganization extends PodioObject
 {
     public function __construct($attributes = array())
     {
-        parent::__construct();
         $this->property('org_id', 'integer', array('id' => true));
         $this->property('name', 'string');
         $this->property('type', 'string');
@@ -33,80 +32,80 @@ class PodioOrganization extends PodioObject
     /**
      * @see https://developers.podio.com/doc/organizations/get-organization-22383
      */
-    public static function get(PodioClient $podio_client, $org_id)
+    public static function get($org_id)
     {
-        return self::member($podio_client->get("/org/{$org_id}"));
+        return self::member(Podio::get("/org/{$org_id}"));
     }
 
     /**
      * @see https://developers.podio.com/doc/organizations/get-organization-by-url-22384
      */
-    public static function get_for_url(PodioClient $podio_client, $attributes = array())
+    public static function get_for_url($attributes = array())
     {
-        return self::member($podio_client->get("/org/url", $attributes));
+        return self::member(Podio::get("/org/url", $attributes));
     }
 
     /**
      * @see https://developers.podio.com/doc/organizations/get-organizations-22344
      */
-    public static function get_all(PodioClient $podio_client)
+    public static function get_all()
     {
-        return self::listing($podio_client->get("/org/"));
+        return self::listing(Podio::get("/org/"));
     }
 
     /**
      * @see https://developers.podio.com/doc/organizations/add-new-organization-22385
      */
-    public static function create(PodioClient $podio_client, $attributes = array())
+    public static function create($attributes = array())
     {
-        return self::member($podio_client->post("/org/", $attributes));
+        return self::member(Podio::post("/org/", $attributes));
     }
 
     /**
      * @see https://developers.podio.com/doc/organizations/add-organization-admin-50854
      */
-    public static function create_admin(PodioClient $podio_client, $org_id, $attributes = array())
+    public static function create_admin($org_id, $attributes = array())
     {
-        return $podio_client->post("/org/{$org_id}/admin/", $attributes);
+        return Podio::post("/org/{$org_id}/admin/", $attributes);
     }
 
     /**
      * @see https://developers.podio.com/doc/organizations/get-organization-admins-81542
      */
-    public static function get_all_admins(PodioClient $podio_client, $org_id)
+    public static function get_all_admins($org_id)
     {
-        return PodioUser::listing($podio_client->get("/org/{$org_id}/admin/"));
+        return PodioUser::listing(Podio::get("/org/{$org_id}/admin/"));
     }
 
     /**
      * @see https://developers.podio.com/doc/organizations/get-organization-login-report-51730
      */
-    public static function get_login_report(PodioClient $podio_client, $org_id, $attributes = array())
+    public static function get_login_report($org_id, $attributes = array())
     {
-        return $podio_client->get("/org/{$org_id}/report/login", $attributes)->json_body();
+        return Podio::get("/org/{$org_id}/report/login", $attributes)->json_body();
     }
 
     /**
      * @see https://developers.podio.com/doc/organizations/get-organization-statistics-28734
      */
-    public static function get_statistics(PodioClient $podio_client, $org_id, $attributes = array())
+    public static function get_statistics($org_id, $attributes = array())
     {
-        return $podio_client->get("/org/{$org_id}/statistics", $attributes)->json_body();
+        return Podio::get("/org/{$org_id}/statistics", $attributes)->json_body();
     }
 
     /**
      * @see https://developers.podio.com/doc/organizations/update-organization-22386
      */
-    public static function update(PodioClient $podio_client, $org_id, $attributes = array())
+    public static function update($org_id, $attributes = array())
     {
-        return $podio_client->put("/org/{$org_id}", $attributes);
+        return Podio::put("/org/{$org_id}", $attributes);
     }
 
     /**
      * Bootstrap organization. Only applicable on Podio Platform
      */
-    public static function bootstrap(PodioClient $podio_client, $attributes = array())
+    public static function bootstrap($attributes = array())
     {
-        return $podio_client->post("/org/bootstrap", $attributes);
+        return Podio::post("/org/bootstrap", $attributes);
     }
 }

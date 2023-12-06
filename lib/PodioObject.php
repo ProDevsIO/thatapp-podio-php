@@ -6,12 +6,7 @@ class PodioObject
     private $__belongs_to;
     private $__properties = array();
     private $__relationships = array();
-
     protected $__id_column;
-
-    public function __construct()
-    {
-    }
 
     public function init($default_attributes = array())
     {
@@ -62,21 +57,24 @@ class PodioObject
             // Special handling for ItemField and AppField.
                         // We need to create collection of the right type
                         if ($class_name == 'PodioItemField') {
+                            $collection_class = 'PodioItemFieldCollection';
                             $values = $default_attributes[$name];
 
                             // Make sure we pass along info on whether the values property
                             // contains API style values or not
-                            $collection = new PodioItemFieldCollection($values, $has_api_values);
+                            $collection = new $collection_class($values, $has_api_values);
                         } elseif ($class_name == 'PodioAppField') {
+                            $collection_class = 'PodioAppFieldCollection';
                             $values = $default_attributes[$name];
-                            $collection = new PodioAppFieldCollection($values);
+                            $collection = new $collection_class($values);
                         } else {
+                            $collection_class = 'PodioCollection';
                             $values = array();
                             foreach ($default_attributes[$name] as $value) {
                                 $child = is_object($value) ? $value : new $class_name($value);
                                 $values[] = $child;
                             }
-                            $collection = new PodioCollection($values);
+                            $collection = new $collection_class($values);
                         }
                         $collection->add_relationship($this, $name);
                         $this->set_attribute($name, $collection);
@@ -99,7 +97,7 @@ class PodioObject
         }
         if ($this->has_attribute($name)) {
             // Create DateTime object if necessary
-            if ($this->has_property($name) && ($this->__properties[$name]['type'] == 'datetime' || $this->__properties[$name]['type'] == 'date') && !empty($this->__attributes[$name])) {
+            if ($this->has_property($name) && ($this->__properties[$name]['type'] == 'datetime' || $this->__properties[$name]['type'] == 'date')) {
                 $tz = new DateTimeZone('UTC');
                 return DateTime::createFromFormat($this->date_format_for_property($name), $this->__attributes[$name], $tz);
             }
